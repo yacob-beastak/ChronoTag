@@ -9,6 +9,7 @@ class StopkyApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Stopwatch")
         self.setGeometry(0, 0, QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height())
+        self.running = False  
 
         # Load background image
         background_label = QLabel(self)
@@ -150,9 +151,6 @@ class StopkyApp(QMainWindow):
         finally:
             conn.close()
 
-    # Další metody pro aktualizaci a manipulaci s daty
-
-
     def update_runners_listbox(self):
         for i in reversed(range(self.runners_layout.count())):
             widget_item = self.runners_layout.itemAt(i).widget()
@@ -175,15 +173,27 @@ class StopkyApp(QMainWindow):
             layout = QHBoxLayout(widget)
             layout.setSpacing(5)  # Menší priestor medzi bežcami
             layout.addWidget(QLabel(f"ID: {runner_id}, Meno: {name}"))
-            layout.addWidget(Stopwatch(widget, self, runner_id, name))
+            stopwatch_widget = Stopwatch(widget, self, runner_id, name)
+            layout.addWidget(stopwatch_widget)
             widget.runner_id = runner_id  # Pridáme runner_id ako atribút widgetu
             self.runners_layout.addWidget(widget)
-
-
-
+            stopwatch_widget.timer.timeout.connect(lambda: self.update_runner_time(runner_id, stopwatch_widget.get_time()))
 
     def update_runner_time(self, runner_id, time):
         self.bezci[runner_id]["čas"] = time
+        self.update_runner_time_in_db(runner_id, time)
+
+    def update_runner_time_in_db(self, runner_id, time):
+        try:
+            conn = sqlite3.connect('bezci.db')
+            c = conn.cursor()
+            c.execute('UPDATE bezci SET Time=? WHERE id=?', (time, runner_id))
+            conn.commit()
+            print(f"SQL UPDATE: Updated time for runner ID {runner_id} to {time}")
+        except sqlite3.Error as e:
+            print("Chyba při aktualizácii času bežca v databáze:", e)
+        finally:
+            conn.close()
 
     def export_to_csv(self):
         with open("runners.csv", "w", newline='') as csvfile:
