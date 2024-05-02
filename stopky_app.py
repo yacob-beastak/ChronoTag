@@ -181,7 +181,7 @@ class StopkyApp(QMainWindow):
 
     def update_runner_time(self, runner_id, time):
         self.bezci[runner_id]["čas"] = time
-        self.update_runner_time_in_db(runner_id, time)
+        
 
     def update_runner_time_in_db(self, runner_id, time):
         try:
