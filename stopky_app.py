@@ -11,12 +11,6 @@ class StopkyApp(QMainWindow):
         self.setGeometry(0, 0, QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height())
         self.running = False  
 
-        # Load background image
-        background_label = QLabel(self)
-        pixmap = QPixmap("styles/5137894.jpg")
-        background_label.setPixmap(pixmap)
-        background_label.resize(self.size())
-        self.setStyleSheet("background-color: black; color: white;")
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -44,7 +38,7 @@ class StopkyApp(QMainWindow):
         self.runners_layout = QVBoxLayout(self.runners_widget)
         self.scroll_area.setWidget(self.runners_widget)
 
-        self.load_runners_from_db()  # Načítání bežců z databáze
+        self.load_runners_from_db()  # Načítanie bežcov z db
 
         # Načítanie bežcov do výpisu po štarte aplikácie
         self.update_runners_listbox()
@@ -103,7 +97,7 @@ class StopkyApp(QMainWindow):
             QMessageBox.critical(dialog, "Chyba", "Prosím, zadajte meno bežca.")
             return
 
-        self.insert_runner_to_db(runner_id, name)  # Ukládání bežce do databáze
+        self.insert_runner_to_db(runner_id, name)  # Ukladanie bežca do DB 
         self.load_runners_from_db()
         self.update_runners_listbox()
 
@@ -121,7 +115,7 @@ class StopkyApp(QMainWindow):
             c.execute('SELECT * FROM bezci WHERE id=?', (runner_id,))
             return c.fetchone() is not None
         except sqlite3.Error as e:
-            print("Chyba při kontrolě existence bežce v databázi:", e)
+            print("Chyba pri kontrole existencie bežca v DB:", e)
             return False
         finally:
             conn.close()
@@ -135,7 +129,7 @@ class StopkyApp(QMainWindow):
             for row in c.fetchall():
                 self.bezci[row[0]] = {'meno': row[1], 'čas': row[2]}
         except sqlite3.Error as e:
-            print("Chyba při načítání bežců z databáze:", e)
+            print("Chyba pri ukladaní bežca do DB:", e)
             self.bezci = {}
         finally:
             conn.close()
@@ -147,7 +141,7 @@ class StopkyApp(QMainWindow):
             c.execute('INSERT INTO bezci VALUES (?, ?, ?)', (runner_id, name, '00:00:00'))
             conn.commit()
         except sqlite3.Error as e:
-            print("Chyba při ukládání bežce do databáze:", e)
+            print("Chyba pri ukladaní bežca do DB:", e)
         finally:
             conn.close()
 
@@ -175,7 +169,7 @@ class StopkyApp(QMainWindow):
             layout.addWidget(QLabel(f"ID: {runner_id}, Meno: {name}"))
             stopwatch_widget = Stopwatch(widget, self, runner_id, name)
             layout.addWidget(stopwatch_widget)
-            widget.runner_id = runner_id  # Pridáme runner_id ako atribút widgetu
+            widget.runner_id = runner_id  # runner_id ako atribút widgetu
             self.runners_layout.addWidget(widget)
             stopwatch_widget.timer.timeout.connect(lambda: self.update_runner_time(runner_id, stopwatch_widget.get_time()))
 
