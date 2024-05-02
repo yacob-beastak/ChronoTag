@@ -11,6 +11,10 @@ class StopkyApp(QMainWindow):
         self.setGeometry(0, 0, QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height())
         self.running = False  
 
+        # Load background image
+        background_label = QLabel(self)
+        background_label.resize(self.size())
+        self.setStyleSheet("background-color: black; color: white;")
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -169,7 +173,7 @@ class StopkyApp(QMainWindow):
             layout.addWidget(QLabel(f"ID: {runner_id}, Meno: {name}"))
             stopwatch_widget = Stopwatch(widget, self, runner_id, name)
             layout.addWidget(stopwatch_widget)
-            widget.runner_id = runner_id  # runner_id ako atribút widgetu
+            widget.runner_id = runner_id  # Pridáme runner_id ako atribút widgetu
             self.runners_layout.addWidget(widget)
             stopwatch_widget.timer.timeout.connect(lambda: self.update_runner_time(runner_id, stopwatch_widget.get_time()))
 
