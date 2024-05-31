@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QScrollArea, QApplication, QDialog, QHBoxLayout, QLineEdit, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QScrollArea, QApplication, QDialog, QHBoxLayout, QLineEdit, QMessageBox, QInputDialog
+from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QPixmap
-import csv  
+import csv
 import sqlite3
 from stopwatch import Stopwatch
 
@@ -9,7 +10,8 @@ class StopkyApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Stopwatch")
         self.setGeometry(0, 0, QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height())
-        self.running = False  
+        self.running = False
+        self.buffer = ""  # Inicializácia buffera
 
         # Load background image
         background_label = QLabel(self)
@@ -26,12 +28,10 @@ class StopkyApp(QMainWindow):
         self.add_runner_button.clicked.connect(self.add_runner)
         self.layout.addWidget(self.add_runner_button)
 
-        
         self.export_button = QPushButton("Exportovať do CSV")
         self.export_button.setStyleSheet("background-color: #7680ad; color: white; padding: 10px 24px; font-size: 16px; border-radius: 10px;")
         self.export_button.clicked.connect(self.export_to_csv)
         self.layout.addWidget(self.export_button)
-
 
         # Zmena na QScrollArea pre zoznam bežcov
         self.scroll_area = QScrollArea()
@@ -46,7 +46,8 @@ class StopkyApp(QMainWindow):
 
         # Načítanie bežcov do výpisu po štarte aplikácie
         self.update_runners_listbox()
-    
+
+        self.installEventFilter(self)
 
     def add_runner(self):
         dialog = QDialog(self)
@@ -160,7 +161,6 @@ class StopkyApp(QMainWindow):
         for runner_id, runner_info in self.bezci.items():
             self.add_runner_to_layout(runner_id, runner_info["meno"])
 
-
     def add_runner_to_layout(self, runner_id, name):
         # Skontrolujeme, či sa widget s daným runner_id už nepridal
         existing_widgets = [self.runners_layout.itemAt(i).widget() for i in range(self.runners_layout.count())]
@@ -179,7 +179,6 @@ class StopkyApp(QMainWindow):
 
     def update_runner_time(self, runner_id, time):
         self.bezci[runner_id]["čas"] = time
-        
 
     def update_runner_time_in_db(self, runner_id, time):
         try:
@@ -194,32 +193,40 @@ class StopkyApp(QMainWindow):
             conn.close()
 
     def export_to_csv(self):
-        with open("runners.csv", "w", newline='') as csvfile:
-            fieldnames = ['ID', 'Meno', 'Čas']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        try:
+            with open('runner_data.csv', mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["ID", "Meno", "Čas"])
+                for runner_id, runner_info in self.bezci.items():
+                    writer.writerow([runner_id, runner_info["meno"], runner_info["čas"]])
+            print("Dáta úspešne exportované do runner_data.csv")
+        except Exception as e:
+            print("Chyba pri exporte do CSV:", e)
 
-            writer.writeheader()
-            for runner_id, runner_info in self.bezci.items():
-                writer.writerow({'ID': runner_id, 'Meno': runner_info["meno"], 'Čas': runner_info["čas"]})
+    def handle_rfid_input(self, rfid):
+        runner_id = rfid.strip()
+        if runner_id in self.bezci:
+            for i in range(self.runners_layout.count()):
+                widget = self.runners_layout.itemAt(i).widget()
+                if widget and widget.runner_id == runner_id:
+                    stopwatch_widget = widget.findChild(Stopwatch)
+                    if stopwatch_widget:
+                        if stopwatch_widget.timer.isActive():
+                            stopwatch_widget.stop()
+                            self.update_runner_time_in_db(runner_id, stopwatch_widget.get_elapsed_time())
+                        else:
+                            stopwatch_widget.start()
+                        break
+        else:
+            QMessageBox.warning(self, "Varovanie", "Bežec s týmto RFID neexistuje.")
 
-        # Notifikácia v štýle dialógového okna pridávania bežca
-        notification_dialog = QDialog(self)
-        notification_dialog.setWindowTitle("Info")
-        notification_dialog.setStyleSheet(
-            "QDialog { background-color: #1f1f1f; }"
-            "QLabel { color: white; font-size: 14px; background-color: #1f1f1f;}"
-            "QPushButton { background-color: #7680ad; color: white; padding: 10px 24px; font-size: 16px; border-radius: 10px; }"
-            "QPushButton:hover { background-color: #465287; }"
-        )
-
-        layout = QVBoxLayout()
-
-        message_label = QLabel("Dáta boli úspešne exportované do CSV súboru.")
-        layout.addWidget(message_label)
-
-        close_button = QPushButton("OK")
-        close_button.clicked.connect(notification_dialog.accept)
-        layout.addWidget(close_button)
-
-        notification_dialog.setLayout(layout)
-        notification_dialog.exec_()
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress:
+            key = event.text()
+            if key.isdigit():
+                self.buffer += key
+            elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+                self.handle_rfid_input(self.buffer)
+                self.buffer = ""
+            return True
+        return super().eventFilter(source, event)

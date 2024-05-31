@@ -20,7 +20,7 @@ def create_table():
         print("Chyba pri vytváraní tabuľky v databáze:", e)
     finally:
         conn.close()
-
+ 
 
 if __name__ == "__main__":
     create_table()  # Vytvorenie tabuľky pri spustení aplikácie
@@ -28,5 +28,4 @@ if __name__ == "__main__":
     ex = StopkyApp()
     ex.showMaximized()
     sys.exit(app.exec_())
-
-
+68
