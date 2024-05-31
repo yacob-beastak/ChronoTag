@@ -33,6 +33,11 @@ class StopkyApp(QMainWindow):
         self.export_button.clicked.connect(self.export_to_csv)
         self.layout.addWidget(self.export_button)
 
+        self.clear_data_button = QPushButton("Vymazať všetky dáta")
+        self.clear_data_button.setStyleSheet("background-color: #eb592d; color: white; padding: 10px 24px; font-size: 16px; border-radius: 10px;")
+        self.clear_data_button.clicked.connect(self.clear_all_data)
+        self.layout.addWidget(self.clear_data_button)
+
         # Zmena na QScrollArea pre zoznam bežcov
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -202,6 +207,25 @@ class StopkyApp(QMainWindow):
             print("Dáta úspešne exportované do runner_data.csv")
         except Exception as e:
             print("Chyba pri exporte do CSV:", e)
+
+
+    
+    def clear_all_data(self):
+        reply = QMessageBox.question(self, 'Vymazať dáta', 'Ste si istý, že chcete vymazať všetky dáta?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                conn = sqlite3.connect('bezci.db')
+                c = conn.cursor()
+                c.execute('DELETE FROM bezci')
+                conn.commit()
+                self.bezci = {}  # Clear the bezci dictionary
+                self.update_runners_listbox()  # Update the UI to reflect the changes
+                QMessageBox.information(self, "Info", "Všetky dáta boli úspešne vymazané.")
+            except sqlite3.Error as e:
+                print("Chyba pri vymazávaní dát:", e)
+            finally:
+                conn.close()
+
 
     def handle_rfid_input(self, rfid):
         runner_id = rfid.strip()
