@@ -32,7 +32,6 @@ class Stopwatch(QWidget):
 
         self.setLayout(layout)
 
-        # Inicializácia QTimer objektu pre aktualizáciu času
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update)
 
@@ -45,11 +44,11 @@ class Stopwatch(QWidget):
     def start(self):
         self.running = True
         self.start_time = time.time() - self.elapsed_time
-        self.app.running = True  # Nastavíme running v StopkyApp na True
+        self.app.running = True  
         self.start_stop_button.setText("STOP")
         self.start_stop_button.setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 8px 20px; font-size: 14px; border: none; border-radius: 5px; } QPushButton:hover { background-color: #d32f2f; }")
-        self.timer.start()  # Spustenie QTimer objektu
-        self.update()  # Zavoláme metódu update() pri štarte
+        self.timer.start()  
+        self.update()  
 
     def stop(self):
         if self.running:
@@ -57,8 +56,8 @@ class Stopwatch(QWidget):
             self.elapsed_time = time.time() - self.start_time
             self.start_stop_button.setText("START")
             self.start_stop_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 8px 20px; font-size: 14px; border: none; border-radius: 5px; } QPushButton:hover { background-color: #45a049; }")
-            self.timer.stop()  # Zastavenie QTimer objektu
-        if not self.timer.isActive():  # Ak časovač nie je aktívny, vykonáme aktualizáciu v databáze
+            self.timer.stop()  
+        if not self.timer.isActive():  
                self.app.update_runner_time_in_db(self.runner_id, self.get_elapsed_time())
 
 
@@ -68,7 +67,7 @@ class Stopwatch(QWidget):
         self.label.setText("00:00:00")
         self.start_stop_button.setText("START")
         self.start_stop_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 8px 20px; font-size: 14px; border: none; border-radius: 5px; } QPushButton:hover { background-color: #45a049; }")
-        self.timer.stop()  # Zastavenie QTimer obj
+        self.timer.stop()  
 
     def update(self):
         if self.running:
@@ -88,4 +87,4 @@ class Stopwatch(QWidget):
         return time_str
 
     def get_time(self):
-        return self.get_elapsed_time()  # Vráti aktualny čas ako reťazec
+        return self.get_elapsed_time()  

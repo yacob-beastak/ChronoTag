@@ -17,7 +17,7 @@ def create_table():
                     )''')
         conn.commit()
     except sqlite3.Error as e:
-        print("Chyba pri vytváraní tabuľky v databáze:", e)
+        print("Error creating table in database:", e)
     finally:
         conn.close()
  
@@ -28,4 +28,3 @@ if __name__ == "__main__":
     ex = StopkyApp()
     ex.showMaximized()
     sys.exit(app.exec_())
-68
