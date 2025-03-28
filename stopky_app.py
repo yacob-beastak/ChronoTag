@@ -2,16 +2,18 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayo
 from PyQt5.QtCore import Qt, QEvent 
 from PyQt5.QtGui import QPixmap , QIcon
 import csv
-import sqlite3
+from runner_repository import RunnerRepository
 from stopwatch import Stopwatch
 
 class StopkyApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.repo = RunnerRepository()  # ← musí byť tu
+
         self.setWindowTitle("Stopwatch")
         self.setGeometry(0, 0, QApplication.desktop().screenGeometry().width(), QApplication.desktop().screenGeometry().height())
         self.running = False
-        self.buffer = ""  
+        self.buffer = ""
 
         
         background_label = QLabel(self)
@@ -96,7 +98,7 @@ class StopkyApp(QMainWindow):
         self.runners_layout = QVBoxLayout(self.runners_widget)
         self.scroll_area.setWidget(self.runners_widget)
 
-        self.load_runners_from_db()  # Loading runners from db
+        self.bezci = self.repo.get_all_runners()  # Loading runners from db
 
         # Loading runners into the list after starting the application
         self.update_runners_listbox()
@@ -148,7 +150,7 @@ class StopkyApp(QMainWindow):
 
         runner_id = id_text
 
-        if self.runner_exists_in_db(runner_id):
+        if self.repo.runner_exists(runner_id):
             QMessageBox.critical(dialog, "Error", "A runner with this ID already exists.")
             return
 
@@ -156,8 +158,8 @@ class StopkyApp(QMainWindow):
             QMessageBox.critical(dialog, "Error", "Please enter the runner's name.")
             return
 
-        self.insert_runner_to_db(runner_id, name)  # Saving the runner to the DB
-        self.load_runners_from_db()
+        self.repo.insert_runner(runner_id, name)  # Saving the runner to the DB
+        self.bezci = self.repo.get_all_runners()
         self.update_runners_listbox()
 
         self.add_runner_to_layout(runner_id, name)
@@ -166,43 +168,6 @@ class StopkyApp(QMainWindow):
         name_entry.clear()
 
         print(f"Added runner with ID: {runner_id}, Meno: {name}")
-
-    def runner_exists_in_db(self, runner_id):
-        try:
-            conn = sqlite3.connect('bezci.db')
-            c = conn.cursor()
-            c.execute('SELECT * FROM bezci WHERE id=?', (runner_id,))
-            return c.fetchone() is not None
-        except sqlite3.Error as e:
-            print("Error checking the existence of a runner in DB:", e)
-            return False
-        finally:
-            conn.close()
-
-    def load_runners_from_db(self):
-        try:
-            conn = sqlite3.connect('bezci.db')
-            c = conn.cursor()
-            self.bezci = {}
-            c.execute('SELECT * FROM bezci')
-            for row in c.fetchall():
-                self.bezci[row[0]] = {'meno': row[1], 'čas': row[2]}
-        except sqlite3.Error as e:
-            print("Error saving runner to DB:", e)
-            self.bezci = {}
-        finally:
-            conn.close()
-
-    def insert_runner_to_db(self, runner_id, name):
-        try:
-            conn = sqlite3.connect('bezci.db')
-            c = conn.cursor()
-            c.execute('INSERT INTO bezci VALUES (?, ?, ?)', (runner_id, name, '00:00:00'))
-            conn.commit()
-        except sqlite3.Error as e:
-            print("Error saving runner to DB:", e)
-        finally:
-            conn.close()
 
     def update_runners_listbox(self):
         for i in reversed(range(self.runners_layout.count())):
@@ -234,18 +199,6 @@ class StopkyApp(QMainWindow):
     def update_runner_time(self, runner_id, time):
         self.bezci[runner_id]["čas"] = time
 
-    def update_runner_time_in_db(self, runner_id, time):
-        try:
-            conn = sqlite3.connect('bezci.db')
-            c = conn.cursor()
-            c.execute('UPDATE bezci SET Time=? WHERE id=?', (time, runner_id))
-            conn.commit()
-            print(f"SQL UPDATE: Updated time for runner ID {runner_id} to {time}")
-        except sqlite3.Error as e:
-            print("Error updating the runner's time in the database:", e)
-        finally:
-            conn.close()
-
     def export_to_csv(self):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getSaveFileName(self, "Export to CSV", "", "CSV Files (*.csv)", options=options)
@@ -264,18 +217,12 @@ class StopkyApp(QMainWindow):
     def clear_all_data(self):
         reply = QMessageBox.question(self, 'Delete database', 'Are you sure you want to delete all data?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            try:
-                conn = sqlite3.connect('bezci.db')
-                c = conn.cursor()
-                c.execute('DELETE FROM bezci')
-                conn.commit()
-                self.bezci = {}  
-                self.update_runners_listbox()  
-                QMessageBox.information(self, "Info", "All data has been successfully deleted.")
-            except sqlite3.Error as e:
-                print("Error deleting data:", e)
-            finally:
-                conn.close()
+            self.repo.delete_all_runners()
+            self.bezci = {}  
+            self.update_runners_listbox()  
+            QMessageBox.information(self, "Info", "All data has been successfully deleted.")
+
+
 
 
     def handle_rfid_input(self, rfid):
@@ -288,7 +235,7 @@ class StopkyApp(QMainWindow):
                     if stopwatch_widget:
                         if stopwatch_widget.timer.isActive():
                             stopwatch_widget.stop()
-                            self.update_runner_time_in_db(runner_id, stopwatch_widget.get_elapsed_time())
+                            self.repo.update_time(runner_id, stopwatch_widget.get_elapsed_time())
                         else:
                             stopwatch_widget.start()
                         break

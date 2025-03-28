@@ -58,7 +58,8 @@ class Stopwatch(QWidget):
             self.start_stop_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 8px 20px; font-size: 14px; border: none; border-radius: 5px; } QPushButton:hover { background-color: #45a049; }")
             self.timer.stop()  
         if not self.timer.isActive():  
-               self.app.update_runner_time_in_db(self.runner_id, self.get_elapsed_time())
+               self.app.repo.update_time(self.runner_id, self.get_elapsed_time())
+
 
 
     def reset(self):
