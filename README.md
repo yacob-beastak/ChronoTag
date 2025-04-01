@@ -25,7 +25,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/tvoje-meno/ChronoTag.git
+   git clone https://github.com/yacob-beastak/ChronoTag.git
    cd ChronoTag
    ```
 
