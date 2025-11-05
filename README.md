@@ -1,4 +1,4 @@
-# ChronoTag 🏃‍♂️⏱
+# ChronoTag
 
 **ChronoTag** is a lightweight desktop app for tracking race times using RFID tags or manual input. Ideal for small events, group runs, or training sessions.
 
